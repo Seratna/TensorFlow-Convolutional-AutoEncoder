@@ -6,7 +6,7 @@ This is an implementation of Convolutional AutoEncoder using only TensorFlow.
 ## Implementation
 The structure of this conv autoencoder is shown below:
 
-![embed](https://github.com/Seratna/TensorFlow-Convolutional-AutoEncoder/files/755894/Autoencoder.Structure.pdf "Optional title")
+![autoencoder structure](https://cloud.githubusercontent.com/assets/13087207/22667671/d9d22190-ec8b-11e6-84a9-0762621a3271.png)
 
 
 ## Experiments
