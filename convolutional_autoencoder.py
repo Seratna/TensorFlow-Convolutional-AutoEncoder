@@ -2,14 +2,7 @@ import tensorflow as tf
 import numpy as np
 from matplotlib import pyplot as plt
 
-# the following 5 lines of code is to make sure that we can import MNIST
-import sys
-import os
-file_abspath = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.dirname(file_abspath)
-sys.path.append(root_dir)
-
-from MNIST.mnist import MNIST
+from mnist import MNIST  # this is the MNIST data manager that provides training/testing batches
 
 
 class ConvolutionalAutoencoder(object):
