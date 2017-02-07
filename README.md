@@ -18,7 +18,7 @@ for other applications.
 
 Since the max-pooling operation is not injective, and TensorFlow does not have a built-in unpooling method,
 we have to implement our own approximation.
-But it is actually easy to do so using TensorFlow's `tf.nn.conv2d_transpose()` method.
+But it is actually easy to do so using TensorFlow's [`tf.nn.conv2d_transpose()`](https://www.tensorflow.org/api_docs/python/nn/convolution#conv2d_transpose) method.
 
 The idea was to replace each entry in the pooled map with an NxM kernel with the original entry in the upper left,
 where N and M are the shape of the pooling kernel.
