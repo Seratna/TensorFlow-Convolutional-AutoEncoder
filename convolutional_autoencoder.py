@@ -141,7 +141,7 @@ class ConvolutionalAutoencoder(object):
 
             # visualize weights
             first_layer_weights = tf.get_default_graph().get_tensor_by_name("conv_1/weights:0").eval()
-            grid = weights_to_grid(first_layer_weights, 8, 4)
+            grid = weights_to_grid(first_layer_weights, 4, 8)
             plt.imshow(grid, cmap=plt.cm.gray, interpolation='nearest')
             plt.title('first conv layers weights')
             plt.show()
