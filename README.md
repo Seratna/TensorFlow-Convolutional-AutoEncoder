@@ -37,6 +37,7 @@ Trained weights of the 1st convolutional layer are shown below, 32 of 5x5 kernel
 ![weights](https://cloud.githubusercontent.com/assets/13087207/22701950/20c88bce-ed2d-11e6-8b0b-fd9e782c2680.png)
 
 And here's some of the reconstruction results:
+
 ![reconstruction_1](https://cloud.githubusercontent.com/assets/13087207/22701953/20d2519a-ed2d-11e6-9f5d-4602ca1459bb.png)
 ![reconstruction_2](https://cloud.githubusercontent.com/assets/13087207/22701952/20c93b78-ed2d-11e6-9b6c-c66ccc8a8200.png)
 ![reconstruction_3](https://cloud.githubusercontent.com/assets/13087207/22701951/20c8f6c2-ed2d-11e6-9594-c3f3b370eb38.png)
