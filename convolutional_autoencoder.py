@@ -16,6 +16,7 @@ class ConvolutionalAutoencoder(object):
         IMG_HEIGHT = 28  # each image of a digit is 28x28
         IMG_WIDTH = 28
         NUM_CHANNELS = 1  # grey scale (only 1 channel)
+        NUM_FEATURES = 100
 
         # place holder of input data and label
         x = tf.placeholder(tf.float32, shape=[None, IMG_HEIGHT, IMG_WIDTH])
@@ -39,9 +40,19 @@ class ConvolutionalAutoencoder(object):
         with tf.variable_scope('pool_2') as scope:
             pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')  # (-1, 7, 7, 32)
 
+        # fully connected (unfold)
+        with tf.variable_scope('fc_1') as scope:
+            flat1 = tf.reshape(pool2, [-1, 7*7*32])
+            representation = self.fully_connected_layer(flat1, [7*7*32, NUM_FEATURES])
+
+        # fully connected (fold)
+        with tf.variable_scope('fc_2') as scope:
+            fc2 = self.fully_connected_layer(representation, [NUM_FEATURES, 7*7*32])
+            folded = tf.reshape(fc2, [-1, 7, 7, 32])
+
         # un-pooling
         with tf.variable_scope('unpool_1') as scope:
-            unpool1 = self.unpooling_layer(pool2, kernel_shape=(2, 2), output_shape=tf.shape(conv2))
+            unpool1 = self.unpooling_layer(folded, kernel_shape=(2, 2), output_shape=tf.shape(conv2))
 
         # Deconvolution (transpose of conv2d)
         with tf.variable_scope('deconv_1') as scope:
@@ -197,7 +208,7 @@ class ConvolutionalAutoencoder(object):
         input_length, num_neurons = weights_shape
         weights = tf.Variable(tf.truncated_normal(weights_shape, stddev=weights_init_stddev), name='weights')
         bias = tf.Variable(tf.constant(bias_init_value, shape=[num_neurons]), name='bias')
-        fc = tf.matmul(input_matrix, weights) + bias
+        fc = tf.nn.relu(tf.matmul(input_matrix, weights) + bias)
 
         return fc
 
@@ -288,6 +299,7 @@ def main():
     conv_autoencoder = ConvolutionalAutoencoder()
     # conv_autoencoder.train(batch_size=100, passes=50000, new_training=True)
     conv_autoencoder.reconstruct()
+
 
 if __name__ == '__main__':
     main()
