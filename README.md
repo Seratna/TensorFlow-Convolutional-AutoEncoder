@@ -9,7 +9,7 @@ This is an implementation of Convolutional AutoEncoder using only TensorFlow.
 
 The structure of this conv autoencoder is shown below:
 
-![autoencoder structure](https://cloud.githubusercontent.com/assets/13087207/22667671/d9d22190-ec8b-11e6-84a9-0762621a3271.png)
+![autoencoder structure](https://cloud.githubusercontent.com/assets/13087207/23150628/cd447882-f7c2-11e6-938a-b8e672d71760.png)
 
 This implementation was build for the MNIST dataset, but it is very easy to change the structure of the model
 for other applications.
