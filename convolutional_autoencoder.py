@@ -14,7 +14,7 @@ class ConvolutionalAutoencoder(object):
         """
         build the graph
         """
-        # place holder of input data and label
+        # place holder of input data
         x = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])  # [#batch, img_height, img_width, #channels]
 
         # encode
@@ -91,17 +91,16 @@ class ConvolutionalAutoencoder(object):
             return grid.squeeze()
 
         mnist = MNIST()
-        saver = tf.train.Saver()  # create a saver
 
         with tf.Session() as sess:
             saver, global_step = Model.continue_previous_session(sess, ckpt_file='saver/checkpoint')
 
             # visualize weights
             first_layer_weights = tf.get_default_graph().get_tensor_by_name("conv_1/kernel:0").eval()
-            grid = weights_to_grid(first_layer_weights, 4, 8)
+            grid_image = weights_to_grid(first_layer_weights, 4, 8)
 
             fig, ax0 = plt.subplots(ncols=1, figsize=(6, 3))
-            ax0.imshow(grid, cmap=plt.cm.gray, interpolation='nearest')
+            ax0.imshow(grid_image, cmap=plt.cm.gray, interpolation='nearest')
             ax0.set_title('first conv layers weights')
             plt.savefig('logs/conv_1_weights.png')
             plt.show()
