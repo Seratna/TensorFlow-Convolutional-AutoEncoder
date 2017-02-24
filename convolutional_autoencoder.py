@@ -96,7 +96,7 @@ class ConvolutionalAutoencoder(object):
             saver, global_step = Model.continue_previous_session(sess, ckpt_file='saver/checkpoint')
 
             # visualize weights
-            first_layer_weights = tf.get_default_graph().get_tensor_by_name("deconv_2/kernel:0").eval()
+            first_layer_weights = tf.get_default_graph().get_tensor_by_name("conv_1/kernel:0").eval()
             grid_image = weights_to_grid(first_layer_weights, 4, 8)
 
             fig, ax0 = plt.subplots(ncols=1, figsize=(8, 4))
