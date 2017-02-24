@@ -11,7 +11,7 @@ This project is based only on TensorFlow.
 
 The structure of this conv autoencoder is shown below:
 
-![autoencoder structure](https://cloud.githubusercontent.com/assets/13087207/23150628/cd447882-f7c2-11e6-938a-b8e672d71760.png)
+![autoencoder structure](https://cloud.githubusercontent.com/assets/13087207/23317657/540f170a-fa9d-11e6-9bcb-8b529a805a9f.png)
 
 The encoding part has 2 convolution layers (each followed by a max-pooling layer) and a fully connected layer. This part
 would encode an input image into a 20-dimension vector (representation). And then the decoding part, which has 1 fully connected layer
@@ -37,8 +37,6 @@ where N and M are the shape of the pooling kernel.
 
 ![un-pooling](https://cloud.githubusercontent.com/assets/13087207/22672037/77e521c6-ec9f-11e6-9aba-119f954cd9f8.png)
 
-This is equivalent to doing transpose of conv2d on the input map 
-with a kernel that has 1 on the upper left and 0 elsewhere. 
+This is equivalent to doing transpose of conv2d on the input map
+with a kernel that has 1 on the upper left and 0 elsewhere.
 Therefore we could do this trick with `tf.nn.conv2d_transpose()` method.
-
-
