@@ -2,6 +2,8 @@ import tensorflow as tf
 import numpy as np
 from matplotlib import pyplot as plt
 
+from models import *
+
 from mnist import MNIST  # this is the MNIST data manager that provides training/testing batches
 
 
@@ -13,46 +15,23 @@ class ConvolutionalAutoencoder(object):
         """
         build the graph
         """
-        IMG_HEIGHT = 28  # each image of a digit is 28x28
-        IMG_WIDTH = 28
-        NUM_CHANNELS = 1  # grey scale (only 1 channel)
-        NUM_FEATURES = 100
-
         # place holder of input data and label
-        x = tf.placeholder(tf.float32, shape=[None, IMG_HEIGHT, IMG_WIDTH])
+        x = tf.placeholder(tf.float32, shape=[None, 28, 28])
 
         # reshape each image to have 1 channel
-        x_image = tf.reshape(x, [-1, IMG_HEIGHT, IMG_WIDTH, NUM_CHANNELS])  # [#batch, img_height, img_width, #channels]
+        x_image = tf.reshape(x, [-1, 28, 28, 1])  # [#batch, img_height, img_width, #channels]
 
-        # Convolutional Layer 1
-        with tf.variable_scope('conv_1') as scope:
-            conv1 = self.conv_layer(x_image, [5, 5, NUM_CHANNELS, 32])
-
-        # max pooling layer 1
-        with tf.variable_scope('pool_1') as scope:
-            pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-
-        # Convolutional Layer 2
-        with tf.variable_scope('conv_2') as scope:
-            conv2 = self.conv_layer(pool1, [5, 5, 32, 32])
-
-        # max pooling
-        with tf.variable_scope('pool_2') as scope:
-            pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')  # (-1, 7, 7, 32)
-
-        # fully connected (unfold)
-        with tf.variable_scope('fc_1') as scope:
-            flat1 = tf.reshape(pool2, [-1, 7*7*32])
-            representation = self.fully_connected_layer(flat1, [7*7*32, NUM_FEATURES])
-
-        # fully connected (fold)
-        with tf.variable_scope('fc_2') as scope:
-            fc2 = self.fully_connected_layer(representation, [NUM_FEATURES, 7*7*32])
-            folded = tf.reshape(fc2, [-1, 7, 7, 32])
-
-        # un-pooling
-        with tf.variable_scope('unpool_1') as scope:
-            unpool1 = self.unpooling_layer(folded, kernel_shape=(2, 2), output_shape=tf.shape(conv2))
+        # encode
+        conv1 = Convolution2D([5, 5, 1, 32], activation=tf.nn.relu, scope='conv_1')(x_image)
+        pool1 = MaxPooling(kernel_shape=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', scope='pool_1')(conv1)
+        conv2 = Convolution2D([5, 5, 32, 32], activation=tf.nn.relu, scope='conv_2')(pool1)
+        pool2 = MaxPooling(kernel_shape=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', scope='pool_2')(conv2)
+        unfold = Unfold(scope='unfold')(pool2)
+        encoded = FullyConnected(100, activation=tf.nn.relu, scope='encode')(unfold)
+        # decode
+        decoded = FullyConnected(7*7*32, activation=tf.nn.relu, scope='decode')(encoded)
+        fold = Fold([-1, 7, 7, 1], scope='fold')
+        unpool1 = UnPooling((2, 2), output_shape=tf.shape(conv2))(fold)
 
         # Deconvolution (transpose of conv2d)
         with tf.variable_scope('deconv_1') as scope:
