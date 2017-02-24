@@ -42,7 +42,7 @@ class MNIST(object):
             assert data_type == 8  # 0x08: unsigned byte
 
             num_dimensions = bytes2int(file.read(1))
-            shape = tuple(bytes2int(file.read(4)) for _ in range(num_dimensions))
+            shape = [bytes2int(file.read(4)) for _ in range(num_dimensions)] + [1]  # make the num of channels to be 1
 
             matrix = np.frombuffer(file.read(), dtype=np.uint8).reshape(shape)
 
