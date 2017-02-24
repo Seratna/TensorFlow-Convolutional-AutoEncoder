@@ -3,7 +3,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from models import *
-
 from mnist import MNIST  # this is the MNIST data manager that provides training/testing batches
 
 
@@ -16,45 +15,31 @@ class ConvolutionalAutoencoder(object):
         build the graph
         """
         # place holder of input data and label
-        x = tf.placeholder(tf.float32, shape=[None, 28, 28])
-
-        # reshape each image to have 1 channel
-        x_image = tf.reshape(x, [-1, 28, 28, 1])  # [#batch, img_height, img_width, #channels]
+        x = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])  # [#batch, img_height, img_width, #channels]
 
         # encode
-        conv1 = Convolution2D([5, 5, 1, 32], activation=tf.nn.relu, scope='conv_1')(x_image)
+        conv1 = Convolution2D([5, 5, 1, 32], activation=tf.nn.relu, scope='conv_1')(x)
         pool1 = MaxPooling(kernel_shape=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', scope='pool_1')(conv1)
         conv2 = Convolution2D([5, 5, 32, 32], activation=tf.nn.relu, scope='conv_2')(pool1)
         pool2 = MaxPooling(kernel_shape=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', scope='pool_2')(conv2)
         unfold = Unfold(scope='unfold')(pool2)
-        encoded = FullyConnected(100, activation=tf.nn.relu, scope='encode')(unfold)
+        encoded = FullyConnected(20, activation=tf.nn.relu, scope='encode')(unfold)
         # decode
         decoded = FullyConnected(7*7*32, activation=tf.nn.relu, scope='decode')(encoded)
-        fold = Fold([-1, 7, 7, 1], scope='fold')
-        unpool1 = UnPooling((2, 2), output_shape=tf.shape(conv2))(fold)
-
-        # Deconvolution (transpose of conv2d)
-        with tf.variable_scope('deconv_1') as scope:
-            deconv1 = self.deconv_layer(unpool1, (5, 5, 32, 32), output_shape=tf.shape(pool1))
-
-        # un-pooling
-        with tf.variable_scope('unpool_2') as scope:
-            unpool2 = self.unpooling_layer(deconv1, kernel_shape=(2, 2), output_shape=tf.shape(conv1))
-
-        # Deconvolution (transpose of conv2d)
-        with tf.variable_scope('deconv_2') as scope:
-            reconstruction = self.deconv_layer(unpool2, (5, 5, 1, 32), output_shape=tf.shape(x_image))
+        fold = Fold([-1, 7, 7, 32], scope='fold')(decoded)
+        unpool1 = UnPooling((2, 2), output_shape=tf.shape(conv2), scope='unpool_1')(fold)
+        deconv1 = DeConvolution2D([5, 5, 32, 32], output_shape=tf.shape(pool1), activation=tf.nn.relu, scope='deconv_1')(unpool1)
+        unpool2 = UnPooling((2, 2), output_shape=tf.shape(conv1), scope='unpool_2')(deconv1)
+        reconstruction = DeConvolution2D([5, 5, 1, 32], output_shape=tf.shape(x), activation=tf.nn.sigmoid, scope='deconv_2')(unpool2)
 
         # loss function
-        loss = tf.nn.l2_loss(x_image - reconstruction)  # L2 loss
+        loss = tf.nn.l2_loss(x - reconstruction)  # L2 loss
 
         # training
         training = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
         #
         self.x = x
-
-        self.x_image = x_image
         self.reconstruction = reconstruction
         self.loss = loss
         self.training = training
@@ -68,22 +53,13 @@ class ConvolutionalAutoencoder(object):
         :return:
         """
         mnist = MNIST()
-        saver = tf.train.Saver()  # create a saver
-        global_step = 0
 
         with tf.Session() as sess:
             # prepare session
-            if new_training:  # start a new training session
-                sess.run(tf.global_variables_initializer())
-                print('started new session')
-            else:  # resume from a previous training session
-                with open('saver/checkpoint') as file:  # read checkpoint file
-                    line = file.readline()  # read the first line, which contains the file name of the latest checkpoint
-                    ckpt = line.split('"')[1]
-                    global_step = int(ckpt.split('-')[1])
-                # restore
-                saver.restore(sess, 'saver/'+ckpt)
-                print('restored from checkpoint ' + ckpt)
+            if new_training:
+                saver, global_step = Model.start_new_session(sess)
+            else:
+                saver, global_step = Model.continue_previous_session(sess, ckpt_file='saver/checkpoint')
 
             # start training
             for step in range(1+global_step, 1+passes+global_step):
@@ -100,8 +76,8 @@ class ConvolutionalAutoencoder(object):
 
     def reconstruct(self):
         """
-        """
 
+        """
         def weights_to_grid(weights, rows, cols):
             """convert the weights tensor into a grid for visualization"""
             height, width, in_channel, out_channel = weights.shape
@@ -125,158 +101,38 @@ class ConvolutionalAutoencoder(object):
             saver.restore(sess, 'saver/'+ckpt)
             print('restored from checkpoint ' + ckpt)
 
-            batch_size = 5
-            x, y = mnist.get_batch(batch_size, dataset='testing')
-            org, recon = sess.run((self.x_image, self.reconstruction), feed_dict={self.x: x})
-
             # visualize weights
-            first_layer_weights = tf.get_default_graph().get_tensor_by_name("conv_1/weights:0").eval()
+            first_layer_weights = tf.get_default_graph().get_tensor_by_name("conv_1/kernel:0").eval()
             grid = weights_to_grid(first_layer_weights, 4, 8)
-            plt.imshow(grid, cmap=plt.cm.gray, interpolation='nearest')
-            plt.title('first conv layers weights')
+
+            fig, ax0 = plt.subplots(ncols=1, figsize=(8, 4))
+            ax0.imshow(grid, cmap=plt.cm.gray, interpolation='nearest')
+            ax0.set_title('first conv layers weights')
+            plt.savefig('logs/conv_1_weights.png')
             plt.show()
 
-            for i in range(batch_size):
-                im = np.concatenate((org[i, :, :, :].reshape(28, 28), recon[i, :, :, :].reshape(28, 28)), axis=1)
-                plt.imshow(im, cmap=plt.cm.gray, interpolation='nearest')
-                plt.text(0, 1, 'input img', color='w')
-                plt.text(28, 1, 'reconstruction', color='w')
-                plt.show()
+            # visualize results
+            batch_size = 36
+            x, y = mnist.get_batch(batch_size, dataset='testing')
+            org, recon = sess.run((self.x, self.reconstruction), feed_dict={self.x: x})
 
-    def conv_layer(self,
-                   input_matrix,
-                   weights_shape,
-                   weights_init_stddev=0.1,
-                   bias_init_value=0.1,
-                   conv_strides=(1, 1, 1, 1),
-                   conv_padding='SAME'):
-        """
-        build a convolutional layer.
+            # input_images = weights_to_grid(org.reshape([batch_size, 28, 28]).transpose((1, 2, 0)), 6, 6)
+            # recon_images = weights_to_grid(recon.reshape([batch_size, 28, 28]).transpose((1, 2, 0)), 6, 6)
+            input_images = weights_to_grid(org.transpose((1, 2, 3, 0)), 6, 6)
+            recon_images = weights_to_grid(recon.transpose((1, 2, 3, 0)), 6, 6)
 
-        :param input_matrix:
-        :param weights_shape: [window_height, window_width, #input_channels, #output_channels]
-        :param weights_init_stddev:
-        :param bias_init_value:
-        :param conv_strides:
-        :param conv_padding:
-        """
-        window_height, window_width, num_input_channels, num_output_channels = weights_shape
-
-        weights = tf.Variable(tf.truncated_normal(weights_shape, stddev=weights_init_stddev), name='weights')
-        bias = tf.Variable(tf.constant(bias_init_value, shape=[num_output_channels]),
-                           name='bias')  # 1 bias for each output channel
-        conv = tf.nn.conv2d(input_matrix, weights, strides=conv_strides, padding=conv_padding)
-        relu = tf.nn.relu(conv + bias)
-
-        return relu
-
-    def fully_connected_layer(self,
-                              input_matrix,
-                              weights_shape,
-                              weights_init_stddev=0.1,
-                              bias_init_value=0.1):
-        """
-        build a fully connected layer.
-
-        :param input_matrix:
-        :param weights_shape: [input_length, num_neurons]
-        :param weights_init_stddev:
-        :param bias_init_value:
-        :return:
-        """
-        input_length, num_neurons = weights_shape
-        weights = tf.Variable(tf.truncated_normal(weights_shape, stddev=weights_init_stddev), name='weights')
-        bias = tf.Variable(tf.constant(bias_init_value, shape=[num_neurons]), name='bias')
-        fc = tf.nn.relu(tf.matmul(input_matrix, weights) + bias)
-
-        return fc
-
-    def unpooling_layer(self,
-                        input_matrix,
-                        kernel_shape,
-                        output_shape):
-        """
-        Unpool a max-pooled layer.
-
-        Currently this method does not use the argmax information from the previous pooling layer.
-        Currently this method assumes that the size of the max-pooling filter is same as the strides.
-
-        Each entry in the pooled map would be replaced with an NxN kernel with the original entry in the upper left.
-        For example: a 1x2x2x1 map of
-
-            [[[[1], [2]],
-              [[3], [4]]]]
-
-        could be unpooled to a 1x4x4x1 map of
-
-            [[[[ 1.], [ 0.], [ 2.], [ 0.]],
-              [[ 0.], [ 0.], [ 0.], [ 0.]],
-              [[ 3.], [ 0.], [ 4.], [ 0.]],
-              [[ 0.], [ 0.], [ 0.], [ 0.]]]]
-
-        :param output_shape:
-        :param input_matrix:
-        :param kernel_shape:
-        :return:
-        """
-        num_channels = input_matrix.get_shape()[-1]
-        input_dtype_as_numpy = input_matrix.dtype.as_numpy_dtype()
-        kernel_rows, kernel_cols = kernel_shape
-
-        # build kernel
-        kernel_value = np.zeros((kernel_rows, kernel_cols, num_channels, num_channels), dtype=input_dtype_as_numpy)
-        kernel_value[0, 0, :, :] = np.eye(num_channels, num_channels)
-        kernel = tf.constant(kernel_value)
-
-        # do the un-pooling using conv2d_transpose
-        unpool = tf.nn.conv2d_transpose(input_matrix,
-                                        kernel,
-                                        output_shape=output_shape,
-                                        strides=(1, kernel_rows, kernel_cols, 1),
-                                        padding='VALID')
-        return unpool
-
-    def deconv_layer(self,
-                     input_matrix,
-                     weights_shape,
-                     output_shape,
-                     weights_init_stddev=0.1,
-                     bias_init_value=0.1,
-                     conv_strides=(1, 1, 1, 1),
-                     conv_padding='SAME'):
-        """
-        build a de-convolution layer.
-
-        using tf.nn.conv2d_transpose() method.
-        see: U{https://www.tensorflow.org/api_docs/python/nn/convolution#conv2d_transpose}
-
-        :param input_matrix:
-        :param weights_shape:
-        :param output_shape:
-        :param weights_init_stddev:
-        :param bias_init_value:
-        :param conv_strides:
-        :param conv_padding:
-        :return:
-        """
-        window_height, window_width, num_output_channels, num_input_channels = weights_shape
-
-        weights = tf.Variable(tf.truncated_normal(weights_shape, stddev=weights_init_stddev), name='weights')
-        bias = tf.Variable(tf.constant(bias_init_value, shape=[num_output_channels]),
-                           name='bias')  # 1 bias for each output channel
-        deconv = tf.nn.conv2d_transpose(input_matrix,
-                                        weights,
-                                        output_shape=output_shape,
-                                        strides=conv_strides,
-                                        padding=conv_padding)
-        relu = tf.nn.relu(deconv + bias)
-
-        return relu
+            fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(10, 5))
+            ax0.imshow(input_images, cmap=plt.cm.gray, interpolation='nearest')
+            ax0.set_title('input images')
+            ax1.imshow(recon_images, cmap=plt.cm.gray, interpolation='nearest')
+            ax1.set_title('reconstructed images')
+            plt.savefig('logs/reconstructions.png')
+            plt.show()
 
 
 def main():
     conv_autoencoder = ConvolutionalAutoencoder()
-    # conv_autoencoder.train(batch_size=100, passes=50000, new_training=True)
+    # conv_autoencoder.train(batch_size=100, passes=100000, new_training=True)
     conv_autoencoder.reconstruct()
 
 
