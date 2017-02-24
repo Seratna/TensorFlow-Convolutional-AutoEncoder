@@ -94,18 +94,13 @@ class ConvolutionalAutoencoder(object):
         saver = tf.train.Saver()  # create a saver
 
         with tf.Session() as sess:
-            with open('saver/checkpoint') as file:  # read checkpoint file
-                line = file.readline()  # read the first line, which contains the file name of the latest checkpoint
-                ckpt = line.split('"')[1]
-            # restore
-            saver.restore(sess, 'saver/'+ckpt)
-            print('restored from checkpoint ' + ckpt)
+            saver, global_step = Model.continue_previous_session(sess, ckpt_file='saver/checkpoint')
 
             # visualize weights
             first_layer_weights = tf.get_default_graph().get_tensor_by_name("conv_1/kernel:0").eval()
             grid = weights_to_grid(first_layer_weights, 4, 8)
 
-            fig, ax0 = plt.subplots(ncols=1, figsize=(8, 4))
+            fig, ax0 = plt.subplots(ncols=1, figsize=(6, 3))
             ax0.imshow(grid, cmap=plt.cm.gray, interpolation='nearest')
             ax0.set_title('first conv layers weights')
             plt.savefig('logs/conv_1_weights.png')
@@ -116,12 +111,10 @@ class ConvolutionalAutoencoder(object):
             x, y = mnist.get_batch(batch_size, dataset='testing')
             org, recon = sess.run((self.x, self.reconstruction), feed_dict={self.x: x})
 
-            # input_images = weights_to_grid(org.reshape([batch_size, 28, 28]).transpose((1, 2, 0)), 6, 6)
-            # recon_images = weights_to_grid(recon.reshape([batch_size, 28, 28]).transpose((1, 2, 0)), 6, 6)
             input_images = weights_to_grid(org.transpose((1, 2, 3, 0)), 6, 6)
             recon_images = weights_to_grid(recon.transpose((1, 2, 3, 0)), 6, 6)
 
-            fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(10, 5))
+            fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(8, 4))
             ax0.imshow(input_images, cmap=plt.cm.gray, interpolation='nearest')
             ax0.set_title('input images')
             ax1.imshow(recon_images, cmap=plt.cm.gray, interpolation='nearest')
