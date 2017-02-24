@@ -96,13 +96,12 @@ class ConvolutionalAutoencoder(object):
             saver, global_step = Model.continue_previous_session(sess, ckpt_file='saver/checkpoint')
 
             # visualize weights
-            first_layer_weights = tf.get_default_graph().get_tensor_by_name("conv_1/kernel:0").eval()
+            first_layer_weights = tf.get_default_graph().get_tensor_by_name("deconv_2/kernel:0").eval()
             grid_image = weights_to_grid(first_layer_weights, 4, 8)
 
-            fig, ax0 = plt.subplots(ncols=1, figsize=(6, 3))
+            fig, ax0 = plt.subplots(ncols=1, figsize=(8, 4))
             ax0.imshow(grid_image, cmap=plt.cm.gray, interpolation='nearest')
             ax0.set_title('first conv layers weights')
-            plt.savefig('logs/conv_1_weights.png')
             plt.show()
 
             # visualize results
@@ -113,12 +112,11 @@ class ConvolutionalAutoencoder(object):
             input_images = weights_to_grid(org.transpose((1, 2, 3, 0)), 6, 6)
             recon_images = weights_to_grid(recon.transpose((1, 2, 3, 0)), 6, 6)
 
-            fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(8, 4))
+            fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(10, 5))
             ax0.imshow(input_images, cmap=plt.cm.gray, interpolation='nearest')
             ax0.set_title('input images')
             ax1.imshow(recon_images, cmap=plt.cm.gray, interpolation='nearest')
             ax1.set_title('reconstructed images')
-            plt.savefig('logs/reconstructions.png')
             plt.show()
 
 
