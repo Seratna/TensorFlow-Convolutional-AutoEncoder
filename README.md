@@ -20,9 +20,10 @@ and 2 convolution layers, would decode the representation back to a 28x28 image 
 Training was done using GTX1070 GPU, batch size 100, 100000 passes.
 
 Trained weights (saved in the saver directory) of the 1st convolutional layer are shown below:
-![weights](logs/conv_1_weights.png)
+![conv_1_weights](https://cloud.githubusercontent.com/assets/13087207/23318050/e4ae8006-fa9e-11e6-8687-c1b732241136.png)
+
 And here's some of the reconstruction results:
-![reconstruction](logs/reconstructions.png)
+![reconstructions](https://cloud.githubusercontent.com/assets/13087207/23318055/e717e6e8-fa9e-11e6-91b4-f4bed411c5b8.png)
 
 ## Implementation
 
