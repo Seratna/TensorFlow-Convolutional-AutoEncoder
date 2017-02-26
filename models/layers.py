@@ -294,7 +294,7 @@ class FullyConnected(Layer):
             self.bias = tf.Variable(tf.constant(0.1, shape=[self.output_dim]), name='bias')
 
         # fully connected layer
-        fc = tf.nn.relu(tf.matmul(input_tensor, self.weights) + self.bias)
+        fc = tf.matmul(input_tensor, self.weights) + self.bias
 
         # activation
         if self.activation:
